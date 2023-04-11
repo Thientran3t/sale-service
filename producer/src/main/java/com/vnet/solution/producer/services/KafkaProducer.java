@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -27,6 +30,10 @@ public class KafkaProducer {
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaProducer.class);
     @Value("${origin.source.path}")
     private String originFilePath;
+    @Value("${sequence.time.seconds}")
+    private int sequenceTime;
+    @Value("${archive.source.path}")
+    private String archiveFilePath;
     private KafkaTemplate<String, SalesData> kafkaTemplate;
 
     public KafkaProducer(KafkaTemplate<String, SalesData> kafkaTemplate) {
@@ -43,8 +50,28 @@ public class KafkaProducer {
         kafkaTemplate.send(message);
     }
 
-    public void readFileCsv(){
-        File inputF = new File(originFilePath);
+    public void readAllFiles() throws InterruptedException, IOException {
+        final File folder = new File(originFilePath);
+        if (folder.listFiles().length == 0) return;
+        for (final File fileEntry : folder.listFiles()) {
+            if (fileEntry.isFile()) {
+                this.readFileCsv(fileEntry);
+                moveReadFile(fileEntry, archiveFilePath);
+                Thread.sleep(sequenceTime * 1000);
+            }
+        }
+    }
+
+    public void moveReadFile(File file, String targetPath) throws IOException {
+        final Path temp = Files.move(Paths.get(file.getPath()), Paths.get(targetPath + file.getName()));
+        if (temp != null) {
+            LOGGER.info("File moved successfully");
+            return;
+        }
+        throw new IllegalArgumentException(String.format("Couldn't move file to folder %s", targetPath));
+    }
+
+    public void readFileCsv(File inputF){
         try(InputStream inputFS = new FileInputStream(inputF);
             BufferedReader br = new BufferedReader(new InputStreamReader(inputFS))) {
             List<SalesData> items = br.lines().skip(1).map(mapToItem).collect(Collectors.toList());
