@@ -55,8 +55,10 @@ public class KafkaProducer {
         if (folder.listFiles().length == 0) return;
         for (final File fileEntry : folder.listFiles()) {
             if (fileEntry.isFile()) {
-                this.readFileCsv(fileEntry);
-                moveReadFile(fileEntry, archiveFilePath);
+                final Map<Tuple, List<SalesData>> records = this.readFileCsv(fileEntry);
+                List<SalesData> message = this.aggregateData(records);
+                this.sendMessage(message);
+                this.moveReadFile(fileEntry, archiveFilePath);
                 Thread.sleep(sequenceTime * 1000);
             }
         }
@@ -71,23 +73,21 @@ public class KafkaProducer {
         throw new IllegalArgumentException(String.format("Couldn't move file to folder %s", targetPath));
     }
 
-    public void readFileCsv(File inputF){
+    public Map<Tuple, List<SalesData>> readFileCsv(File inputF){
         try(InputStream inputFS = new FileInputStream(inputF);
             final BufferedReader br = new BufferedReader(new InputStreamReader(inputFS))) {
             final List<SalesData> items = br.lines().skip(1).map(mapToItem).collect(Collectors.toList());
-            final Map<Tuple, List<SalesData>> records =
-                items
+                return items
                         .stream()
                         .collect(groupingBy(item -> new Tuple(item.getProductName(), item.getStoreName())));
-            aggregateData(records);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void aggregateData(Map<Tuple, List<SalesData>> records) {
-        if (records.isEmpty()) return;
-        final List<SalesData> message = records.entrySet().stream()
+    private List<SalesData> aggregateData(Map<Tuple, List<SalesData>> records) {
+        if (records.isEmpty()) return null;
+        return records.entrySet().stream()
             .flatMap(e -> Stream.of(e.getValue()))
             .map(
                 item -> {
@@ -98,7 +98,6 @@ public class KafkaProducer {
                     return new SalesData(LocalDate.now(), item.get(0).getStoreName(), item.get(0).getProductName(), unitSales, revenue);
                 })
             .collect(toList());
-        this.sendMessage(message);
     }
 
     private Function<String, SalesData> mapToItem = (line) -> {

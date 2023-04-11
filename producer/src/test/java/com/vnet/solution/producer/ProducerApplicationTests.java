@@ -15,6 +15,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @DirtiesContext
@@ -22,8 +25,6 @@ import java.util.Arrays;
 class ProducerApplicationTests {
 	@Autowired
 	private KafkaProducer producer;
-	@Autowired
-
 	@Test
 	void testSendMessage() {
 		SalesData salesData = new SalesData();
@@ -40,6 +41,8 @@ class ProducerApplicationTests {
 	void testReadFileCsv() throws IOException {
 		Resource resource = new ClassPathResource("Sales_20221201_20221231.psv");
 		File file = resource.getFile();
-		producer.readFileCsv(file);
+		var result = producer.readFileCsv(file);
+		assertNotNull(result);
+		assertInstanceOf(Map.class, result);
 	}
 }
