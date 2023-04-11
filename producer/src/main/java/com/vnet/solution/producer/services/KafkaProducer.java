@@ -42,7 +42,7 @@ public class KafkaProducer {
 
     public void sendMessage(List<SalesData> data){
         LOGGER.info(String.format("Message sent -> %s", data.toString()));
-        Message<List<SalesData>> message = MessageBuilder
+        final Message<List<SalesData>> message = MessageBuilder
                         .withPayload(data)
                         .setHeader(KafkaHeaders.TOPIC, Constants.KAFKA_TOPIC_NAME)
                         .build();
@@ -73,9 +73,9 @@ public class KafkaProducer {
 
     public void readFileCsv(File inputF){
         try(InputStream inputFS = new FileInputStream(inputF);
-            BufferedReader br = new BufferedReader(new InputStreamReader(inputFS))) {
-            List<SalesData> items = br.lines().skip(1).map(mapToItem).collect(Collectors.toList());
-            Map<Tuple, List<SalesData>> records =
+            final BufferedReader br = new BufferedReader(new InputStreamReader(inputFS))) {
+            final List<SalesData> items = br.lines().skip(1).map(mapToItem).collect(Collectors.toList());
+            final Map<Tuple, List<SalesData>> records =
                 items
                         .stream()
                         .collect(groupingBy(item -> new Tuple(item.getProductName(), item.getStoreName())));
@@ -87,7 +87,7 @@ public class KafkaProducer {
 
     private void aggregateData(Map<Tuple, List<SalesData>> records) {
         if (records.isEmpty()) return;
-        List<SalesData> message = records.entrySet().stream()
+        final List<SalesData> message = records.entrySet().stream()
             .flatMap(e -> Stream.of(e.getValue()))
             .map(
                 item -> {
@@ -102,7 +102,7 @@ public class KafkaProducer {
     }
 
     private Function<String, SalesData> mapToItem = (line) -> {
-        String[] values = line.split("\\|");
+        final String[] values = line.split("\\|");
 
         SalesData item = new SalesData();
         item.setSalesDate(LocalDate.parse(values[0], DateTimeFormatter.BASIC_ISO_DATE));
