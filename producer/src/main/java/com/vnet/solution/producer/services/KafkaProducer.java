@@ -85,7 +85,7 @@ public class KafkaProducer {
         }
     }
 
-    private List<SalesData> aggregateData(Map<Tuple, List<SalesData>> records) {
+    public List<SalesData> aggregateData(Map<Tuple, List<SalesData>> records) {
         if (records.isEmpty()) return null;
         return records.entrySet().stream()
             .flatMap(e -> Stream.of(e.getValue()))

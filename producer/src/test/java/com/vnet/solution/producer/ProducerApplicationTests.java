@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,11 +39,15 @@ class ProducerApplicationTests {
 	}
 
 	@Test
-	void testReadFileCsv() throws IOException {
+	void testReadFileCsvAndAggregatingData() throws IOException {
 		Resource resource = new ClassPathResource("Sales_20221201_20221231.psv");
 		File file = resource.getFile();
 		var result = producer.readFileCsv(file);
 		assertNotNull(result);
 		assertInstanceOf(Map.class, result);
+
+		var data = producer.aggregateData(result);
+		assertNotNull(data);
+		assertInstanceOf(List.class, data);
 	}
 }
