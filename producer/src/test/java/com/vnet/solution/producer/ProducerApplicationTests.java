@@ -1,6 +1,7 @@
 package com.vnet.solution.producer;
 
 import com.vnet.solution.common.dto.SalesData;
+import com.vnet.solution.common.dto.Tuple;
 import com.vnet.solution.producer.services.KafkaProducer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,11 +44,15 @@ class ProducerApplicationTests {
 		Resource resource = new ClassPathResource("Sales_20221201_20221231.psv");
 		File file = resource.getFile();
 		var result = producer.readFileCsv(file);
+		Tuple tuple = new Tuple("Apple iPad 9", "Store5");
 		assertNotNull(result);
 		assertInstanceOf(Map.class, result);
+		assertTrue(result.containsKey(tuple));
 
 		var data = producer.aggregateData(result);
 		assertNotNull(data);
 		assertInstanceOf(List.class, data);
+		SalesData salesData = new SalesData("Store5", "Apple iPad 9", 138, BigDecimal.valueOf(60561.4530));
+		data.contains(salesData);
 	}
 }
